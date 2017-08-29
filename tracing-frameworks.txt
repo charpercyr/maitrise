@@ -10,7 +10,7 @@ Twitter Zipkin : http://zipkin.io/
 
 Stardust : http://www.pdl.cmu.edu/PDL-FTP/SelfStar/thereska_sigmetrics06.pdf
 
-X-Trace : http://www.x-trace.net/wiki/doku.php
+Pivot Tracing : http://pivottracing.io/
 
 Design Helper Paper (End-to-end tracing) : http://www.pdl.cmu.edu/PDL-FTP/SelfStar/CMU-PDL-14-102.pdf
     see ./end-to-end.txt
