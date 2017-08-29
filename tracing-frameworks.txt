@@ -1,0 +1,10 @@
+Google Dapper : https://research.google.com/pubs/pub36356.html
+    Internal tool
+    Paper explaining architecture
+    Multiple frameworks based on it
+
+Apache HTrace : http://htrace.incubator.apache.org/
+
+Twitter Zipkin : http://zipkin.io/
+    Based on Dapper paper
+    
