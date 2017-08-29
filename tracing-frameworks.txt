@@ -14,3 +14,6 @@ Pivot Tracing : http://pivottracing.io/
 
 Design Helper Paper (End-to-end tracing) : http://www.pdl.cmu.edu/PDL-FTP/SelfStar/CMU-PDL-14-102.pdf
     see ./end-to-end.txt
+
+OpenTracing : http://opentracing.io/
+    Common interface for tracing frameworks, supports multiple backends
