@@ -7,4 +7,10 @@ Apache HTrace : http://htrace.incubator.apache.org/
 
 Twitter Zipkin : http://zipkin.io/
     Based on Dapper paper
-    
+
+Stardust : http://www.pdl.cmu.edu/PDL-FTP/SelfStar/thereska_sigmetrics06.pdf
+
+X-Trace : http://www.x-trace.net/wiki/doku.php
+
+Design Helper Paper (End-to-end tracing) : http://www.pdl.cmu.edu/PDL-FTP/SelfStar/CMU-PDL-14-102.pdf
+    see ./end-to-end.txt

@@ -1,0 +1,118 @@
+So, you want to trace your distributed system? Key design insights from years of practical experience
+http://www.pdl.cmu.edu/PDL-FTP/SelfStar/CMU-PDL-14-102.pdf
+
+Main uses
+    Anomaly Detection
+    Steady-state problems : Mainly performance
+    Distributed Profiling
+    Resource Attribution
+    Workload modeling : Analysis
+
+
+3 main types
+    Metadata propagation
+        Most accurate
+        Collaboration with the traced system
+        Will assume this technique for the rest of the document
+    Schema-Based
+        No metadata propagation, need the programmer to write temporal join-schema to establish relationship
+        Collaboration with the traced system
+    Black-box inference
+        Hardest
+        Does not work well with async behavior
+        No modification of the traced system
+
+
+Components
+    Trace points
+    Causal-tracking mechanism
+    Sampling mechanism
+    Storage
+    Trace construction
+    Presentation
+
+
+4 axes for every tracing framework, impacts design choices
+
+Which causal relashionship should be preserved
+    Goal is to preserve only what is necessary
+        Too little : Useless
+        Too much : Overhead + Harder to analyze
+    Happen Before Relashionship
+        If B happens after A, then A **may** have influenced B, B **may** be causally dependent on A
+        Approximation, can capture irrelevant causality or fail to capture external events
+        Tracing systems capture slices of happens-before that are more likely to contain true/important relationships
+        May ask the developper to add trace point areas and only track what is marked as important
+    Intra-request slices
+        Submitter-Preserving slices
+            Preserve the causality between the original submitter of a request and the work done across all components
+            May attribute work done after the client reply has been sent
+            Useful for resource attribution tracing
+        Trigger-Preserving slices
+            Preserves all the work that must be done to send a reply to a client
+            May include another client's latent work
+            Always end with a reply
+            Useful for anomaly detection
+        Preserve both
+            Better understanding of the system
+            Can answer : "Who was responsible for evicting my clients cached data ?", "Which clients are interfering with each other ?"
+        Preserving workflow structure (concurrency, forks, joins)
+            Optional
+            Useful for diagnostics
+                Excessive parallelism or too little parallelism
+                Waiting at sync points
+                Identify critical paths
+    Inter-request slices
+        Contention-Preserving slices
+            Access to shared resources
+            Preserve causality between requests holding a resource lock and those waiting for it
+        Read-after-write slices
+            Requests that read data written by another request may be affected
+            Preserve causality between writer and reader requests
+
+How causal relationship are tracked
+    Metadata types
+        Static, fixed-width metadata
+            A single metadata value is chosen to identify all causal-related activity (eg 64-bit ID)
+            Must explicitly construct traces by joining trace-points records with the same metadata
+            Brittle, unable to order activities in case the external clues are lost or unavailable
+        Dynamic, fixed-width metadata
+            Single logical clocks (single value) are embedded with the ID
+            At each trace-point, a new clock value is randomly chosen.
+            Store the old and new clock values
+            Must construct traces using the trace records
+            Brittle, unable to order activities if a trace record is lost because the clock values are unrelated
+            Hybrid approach that do not change the clock value as often are more resilient
+        Dynamic, variable-width metadata
+            Non-constant size metadata
+            Keep the interval-tree clock instead of single value
+            No trace construction necessary
+            Metadata size grows with number of threads/workers
+    Preserving Fork + Joins
+        Keep one-to-many and many-to-one relationships
+
+How to reduce overhead by sampling
+    Methods
+        Coherent sampling methods
+            Garantee that all or none of the trace points executed by a workflow will be sampled
+        Head-Based Coherent sampling
+            Desision to trace is made at the start and the metadata is propagated through the system
+            With submitter-preserving, does not reduce overhead since we have to trace every latent work in case it is attributed to a sampled work.
+        Tail-Based Coherent sampling
+            Decision to trace is made at the end
+            Every worker has to cache sampling (usually temporarily in a circular buffer)
+            High memory demand
+        Unitary sampling
+            Decision to trace is made at each node.
+            No coherence
+            Traces cannot be constructed
+            Useful for resource acquisition traces
+    How many samples
+        Percetage based: Usually between 0.01% to 10%
+        Rate based, eg trace 500 points/s or 100 workflows/s : Ajust the percentage based on workflow speed
+
+How traces should be visualized
+    Gantt charts (swimlanes), Single request, single workflow
+    Flow graphs, Multiple requests, single workflow
+    Call graphs and focus graphs, Multiple requests, single/multiple workflow
+    Calling Context Trees, Multiple requests, Multiple workflows
