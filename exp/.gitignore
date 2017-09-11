@@ -1,6 +1,4 @@
 
-# Created by https://www.gitignore.io/api/c,c++,python
-
 ### C ###
 # Prerequisites
 *.d
@@ -176,10 +174,6 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# End of https://www.gitignore.io/api/c,c++,python
-
-# Created by https://www.gitignore.io/api/visualstudiocode
-
 ### VisualStudioCode ###
 .vscode/*
 !.vscode/settings.json
@@ -188,4 +182,14 @@ venv.bak/
 !.vscode/extensions.json
 .history
 
-# End of https://www.gitignore.io/api/visualstudiocode
+### CMake ###
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+build
