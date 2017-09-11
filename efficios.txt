@@ -1,0 +1,20 @@
+- dynamic inst. on the fly
+- cout sur les utilisateurs
+    - dependances
+    - startup time
+    - inst.
+    - plusieurs facons de faire selon le use-case
+- live patching (multiprocessing, kernel)
+
+Controler le tracage sur un traceur distribué (à distance)
+Metadata dans les messages
+Aggregation pendant ? Après ?
+Rouler en mode snapshot et save ce qui est intéressant
+Savoir quel problème (profilage, tracing, ...)
+LTTng + opentracing
+
+Roadmap
+1- uprobe: get les args
+    a- Bytecode pour get l'info
+    b- Descriptions
+2- 
