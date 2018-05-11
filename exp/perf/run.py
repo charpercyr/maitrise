@@ -16,7 +16,7 @@ def powmod_off():
     for line in out.split('\n'):
         if 'powmod' in line:
             return int(line.strip().split(' ')[1], 16)
-    raise ValueError('Not offset')
+    raise ValueError('No offset for powmod')
 
 def exec_command(args, before=None, after=None, check_return=True):
     print('>', ' '.join(args))
@@ -49,8 +49,8 @@ def start_uprobe(tp, off):
     exec_command(['sudo', 'bash', '-c', f'echo 1 > {UPROBE_ENABLE}'])
 
 def stop_uprobe():
-    exec_command(['sudo', 'bash', '-c', f'echo 0 > {UPROBE_ENABLE}'])
-    exec_command(['sudo', 'bash', '-c', f'echo > {UPROBE_FILE}'])
+    exec_command(['sudo', 'bash', '-c', f'echo 0 > {UPROBE_ENABLE}'], check_return=False)
+    exec_command(['sudo', 'bash', '-c', f'echo > {UPROBE_FILE}'], check_return=False)
 
 def trace_powmod(entry_exit):
     time.sleep(0.1)
@@ -94,4 +94,8 @@ def main():
 
 
 if __name__ == '__main__':
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        stop_dyntrace()
+        stop_uprobe()
