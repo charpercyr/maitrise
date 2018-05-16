@@ -1,9 +1,10 @@
 
 import subprocess as sp
 
-def execute(args, stdin=None, stdout=None, stderr=None, before=None, after=None, ignore_err=False):
-    print('>', ' '.join(args))
-    proc = sp.Popen(args, stdin=stdin, stdout=stdout, stderr=stderr)
+def execute(args, stdout=None, stderr=None, before=None, after=None, ignore_err=False, cwd=None, silent=False):
+    if not silent:
+        print('>', ' '.join(a if ' ' not in a else f'"{a}"' for a in args))
+    proc = sp.Popen(args, stdin=sp.PIPE, stdout=stdout, stderr=stderr, cwd=cwd)
     if before: before()
     out, err = proc.communicate()
     if after: after()
@@ -11,14 +12,14 @@ def execute(args, stdin=None, stdout=None, stderr=None, before=None, after=None,
         raise RuntimeError('Process failed')
     return out, err
 
-def sudo_execute(args, stdin=None, stdout=None, stderr=None, before=None, after=None, ignore_err=False):
+def sudo_execute(args, stdout=None, stderr=None, before=None, after=None, ignore_err=False, cwd=None):
     cargs = []
     for a in args:
-        if a.contains(' '):
+        if ' ' in a:
             a = f'"{a}"'
         cargs += [a]
     cargs = ' '.join(cargs)
     return execute(
         ['sudo', 'bash', '-c', cargs],
-        stdin, stdout, stderr, before, after, ignore_err
+        stdout, stderr, before, after, ignore_err, cwd
     )

@@ -6,8 +6,8 @@ from exp.execute import *
 def create_dyntrace_before(ee):
     args = [
         'dyntrace',
-        'add'
-        *(('-e',) if ee else ())
+        'add',
+        *(('-e',) if ee else ()),
         'powmod',
         'none'
     ]
@@ -27,11 +27,11 @@ def register(runner):
         ['perf.cpp'],
         libs=['pthread']
     )
-    exe.add_arg('threads', int, [1, 2, 4, 8, 16, 32, 64])
-    exe.add_arg('iters', int, 50000)
-    exe.add_arg('b', int, 5)
-    exe.add_arg('e', int, 123)
-    exe.add_arg('m', int, 1030)
+    exe.add_arg('threads', int, [1, 2, 4, 8], help='Number of threads')
+    exe.add_arg('iters', int, 50000, help='Number of iterations')
+    exe.add_arg('b', int, 5, help='Base')
+    exe.add_arg('e', int, 123, help='Exponent')
+    exe.add_arg('m', int, 1030, help='Modulo')
     exe.set_headers(['time (ns)'])
 
     runner.add_test('none', exe)
