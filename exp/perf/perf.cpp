@@ -1,22 +1,18 @@
 
 #include <chrono>
-#include <cmath>
 #include <iostream>
-#include <fstream>
 #include <string>
+#include <sstream>
+#include <future>
+#include <vector>
 
 using namespace std;
 
 #define CLOBBER() asm volatile("":::"memory")
 
-using duration = chrono::duration<double, nano>;
+using duration = chrono::nanoseconds;
 
-uint64_t arg_b = 5;
-uint64_t arg_e = 123;
-uint64_t arg_m = 1030;
-
-extern "C" [[gnu::noinline]]
-uint64_t powmod(uint64_t b, uint64_t e, uint64_t m)
+extern "C" [[gnu::noinline]] uint64_t powmod(uint64_t b, uint64_t e, uint64_t m)
 {
     uint64_t c = 1;
     for(size_t i = 0; i < e; ++i)
@@ -27,69 +23,59 @@ uint64_t powmod(uint64_t b, uint64_t e, uint64_t m)
     return c;
 }
 
-duration do_run(size_t n_iter)
+[[noreturn]]
+void show_usage(char* prog, int ret)
 {
-    auto start = chrono::steady_clock::now();
-    for(size_t i = 0; i < n_iter; ++i)
-    {
-        powmod(arg_b, arg_e, arg_m);
-    }
-    auto end = chrono::steady_clock::now();
-    return chrono::duration_cast<duration>(end - start);
+    cout << prog << " <# threads> <# iters> <b> <e> <m>\n";
+    exit(ret);
 }
 
-void show_usage(char* argv0, int e)
+duration do_run(shared_future<void> barrier, uint64_t iters, uint64_t b, uint64_t e, uint64_t m)
 {
-    cout << "Usage: " << argv0 << " <out_file> [runs] [iter/run]\n";
-    exit(e);
+    barrier.wait();
+
+    auto start = chrono::steady_clock::now();
+    for(size_t i = 0; i < iters; ++i)
+    {
+        powmod(b, e, m);
+    }
+    auto end = chrono::steady_clock::now();
+    return chrono::duration_cast<chrono::nanoseconds>(end - start);
 }
 
 int main(int argc, char** argv)
 {
-    size_t n_runs = 100;
-    size_t n_iter = 50000;
-    ofstream out;
-    if(argc == 1)
-        show_usage(argv[0], 0);
-    if(argc >= 2)
-    {
-        out = ofstream{argv[1], ios::out | ios::trunc};
-        if(!out)
-        {
-            cerr << "Could not open file " << argv[1] << " for writing\n";
-            exit(1);
-        }
-    }
-    if(argc >= 3)
-        n_runs = atoi(argv[2]);
-    if(argc >= 4)
-        n_iter = atoi(argv[3]);
+    if (argc < 6)
+        show_usage(argv[0], argc == 1 ? 0 : 1);
 
-    if(n_runs == 0 || n_iter == 0)
-    {
-        show_usage(argv[0], 1);
-    }
+    size_t threads, iters, b, e, m;
 
-    getchar();
-    out << "Runs," << n_runs << "\n";
-    out << "Iterations," << n_iter << "\n";
-    out << "Run,Time (ns)\n";
+    istringstream{argv[1]} >> threads;
+    istringstream{argv[2]} >> iters;
+    istringstream{argv[3]} >> b;
+    istringstream{argv[4]} >> e;
+    istringstream{argv[5]} >> m;
 
-    double mean = 0;
-    double stddev = 0;
-    for(size_t i = 0; i < n_runs; ++i)
-    {
-        auto dur = do_run(n_iter);
-        dur /= n_iter;
-        mean += dur.count();
-        stddev += dur.count()*dur.count();
-        out << i << "," << dur.count() << "\n";
-    }
-    mean /= n_runs;
-    stddev /= n_runs;
-    stddev = sqrt(stddev - mean*mean);
-    cout << "Iterations: " << n_runs << " x " << n_iter << "\n";
-    cout << "mean:       " << mean << " ns\n";
-    cout << "stddev:     " << stddev << " ns\n";
+    if(threads == 0 || iters == 0 || b == 0 || e == 0 || m == 0)
+        exit(1);
+
+    while(getchar() != EOF);
+
+    duration total{0};
+
+    promise<void> promise;
+    shared_future<void> barrier{promise.get_future()};
+    vector<future<duration>> results(threads);
+
+    for(auto& r : results)
+        r = async(do_run, barrier, iters, b, e, m);
+    
+    promise.set_value();
+    
+    for(auto& r : results)
+        total += r.get();
+    
+    cout << total.count() << "\n";
+
     return 0;
 }
