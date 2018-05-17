@@ -19,6 +19,7 @@ def main():
     subs = parser.add_subparsers()
 
     parser.add_argument('-r', '--runs', type=int, default=100, help='Number of runs')
+    parser.add_argument('-v', '--verbose', action='store_true', help='Verbose output')
 
     runners = {}
 

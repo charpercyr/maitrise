@@ -2,6 +2,7 @@
 import time
 
 from exp.execute import *
+from exp.runner import Results
 
 def create_dyntrace_before(ee):
     args = [
@@ -11,15 +12,17 @@ def create_dyntrace_before(ee):
         'powmod',
         'none'
     ]
-    def dyntrace_before(exe):
-        sudo_execute(['dyntraced', '--d'])
-        execute(['dyntrace', 'attach', exe.name])
+    def dyntrace_before(args, exe):
+        sudo_execute(['dyntraced', '--d'], silent=not args.verbose)
+        execute(['dyntrace', 'attach', exe.name], silent=not args.verbose)
         time.sleep(0.1)
-        execute(args)
     return dyntrace_before
 
-def dyntrace_after():
-    sudo_execute(['pkill', 'dyntraced'], ignore_err=True)
+def dyntrace_after(args, exe=None):
+    sudo_execute(['pkill', 'dyntraced'], ignore_err=True, silent=not args.verbose)
+
+def analyze_data(results):
+    pass
 
 def register(runner):
     exe = runner.add_executable(
@@ -34,9 +37,11 @@ def register(runner):
     exe.add_arg('m', int, 1030, help='Modulo')
     exe.set_headers(['time (ns)'])
 
-    runner.add_test('none', exe)
-    runner.add_test('dyntrace', exe, before=create_dyntrace_before(False), after=dyntrace_after)
-    runner.add_test('dyntrace-ee', exe, before=create_dyntrace_before(True), after=dyntrace_after)
+    none = runner.add_test('none', exe)
+    dyntrace = runner.add_test('dyntrace', exe, before=create_dyntrace_before(False), after=dyntrace_after)
+    dyntrace_ee = runner.add_test('dyntrace-ee', exe, before=create_dyntrace_before(True), after=dyntrace_after)
+
+    runner.add_analysis('multithread', )
 
     runner.add_pre(dyntrace_after)
     runner.add_post(dyntrace_after)

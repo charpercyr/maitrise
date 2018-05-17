@@ -12,7 +12,7 @@ def execute(args, stdout=None, stderr=None, before=None, after=None, ignore_err=
         raise RuntimeError('Process failed')
     return out, err
 
-def sudo_execute(args, stdout=None, stderr=None, before=None, after=None, ignore_err=False, cwd=None):
+def sudo_execute(args, stdout=None, stderr=None, before=None, after=None, ignore_err=False, cwd=None, silent=False):
     cargs = []
     for a in args:
         if ' ' in a:
@@ -21,5 +21,5 @@ def sudo_execute(args, stdout=None, stderr=None, before=None, after=None, ignore
     cargs = ' '.join(cargs)
     return execute(
         ['sudo', 'bash', '-c', cargs],
-        stdout, stderr, before, after, ignore_err, cwd
+        stdout, stderr, before, after, ignore_err, cwd, silent
     )

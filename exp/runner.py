@@ -65,13 +65,13 @@ class Executable:
             *(f'-l{l}' for l in self.libs)
         ], cwd=self.cwd)
 
-    def execute(self, args, before, after):
-        runs = args.runs
+    def execute(self, test_name, cmdargs, before, after):
+        runs = cmdargs.runs
         a = []
-        format_string = self.name
+        format_string = f'{self.name}-{test_name}'
         for name, default in self.args:
             try:
-                a += [getattr(args, name)]
+                a += [getattr(cmdargs, name)]
                 if a[-1] is None:
                     a[-1] = default
             except:
@@ -79,6 +79,7 @@ class Executable:
             if len(a[-1]) != 1:
                 format_string += f'-{{{name}}}'
         format_string += '.csv'
+        results = []
         for args in itertools.product(*a):
             keyargs = {}
             for i, a in enumerate(self.args):
@@ -90,17 +91,35 @@ class Executable:
             exec_args = [self.path, *(str(a) for a in args)]
             print(f'> {runs}x', ' '.join(exec_args))
             for i in range(runs):
-                out = str(execute(exec_args, stdout=sp.PIPE, silent=True)[0], 'utf-8')
+                out = str(execute(
+                    exec_args, stdout=sp.PIPE, silent=not cmdargs.verbose,
+                    before=((lambda: before(cmdargs, self)) if before else None), after=((lambda: after(cmdargs, self)) if after else None)
+                )[0], 'utf-8')
                 res.add_result([i, *out.strip().split('\n')])
             res.commit()
+            results += [res]
+        return results
 
 
 class Test:
     def __init__(self, name, exe, before, after):
-        pass
+        self.name = name
+        self.exe = exe
+        self.before = before
+        self.after = after
+        self.results = None
 
     def __call__(self, args):
-        pass
+        print(f'>>> {self.name.upper()}')
+        self.results = self.exe.execute(self.name, args, self.before, self.after)
+
+class Analysis:
+    def __init__(self, name, func):
+        self.name = name
+        self.func = func
+
+    def analyze(self, results):
+        self.func(results)
 
 class Runner:
     def __init__(self, parser, resdir, tmpdir, cwd):
@@ -110,6 +129,7 @@ class Runner:
         self.cwd = cwd
         self.exes = []
         self.tests = []
+        self.analyses = []
         self.pre = []
         self.post = []
 
@@ -117,21 +137,25 @@ class Runner:
         for exe in self.exes:
             exe.compile()
         for pre in self.pre:
-            pre()
+            pre(args)
         for t in self.tests:
             t(args)
         for post in self.post:
-            post()
+            post(args)
+        for ana, tests in self.analyses:
+            pass
 
     def add_executable(self, name, sources, flags=None, libs=None):
         self.exes += [Executable(name, os.path.join(self.tmpdir, name), self.resdir, self.cwd, self.parser, sources, flags, libs)]
         return self.exes[-1]
 
     def add_test(self, name, exe, before=None, after=None):
-        pass
+        self.tests += [Test(name, exe, before, after)]
+        return self.tests[-1]
 
-    def set_headers(self, hdrs):
-        pass
+    def add_analysis(self, name, func, *tests):
+        self.analyses += [(Analysis(name, func), tests)]
+        return self.analyses[-1]
 
     def add_pre(self, func):
         self.pre += [func]
