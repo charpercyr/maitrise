@@ -16,7 +16,7 @@ class Results:
         self.comments[key] = value
 
     def add_result(self, res):
-        self.results += [res]
+        self.results += [tuple(res)]
 
     def set_headers(self, hdrs):
         self.headers = hdrs
@@ -24,9 +24,10 @@ class Results:
     def commit(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
         with open(self.path, 'w') as file:
-            for k, v in self.comments.items():
-                file.write(f'{k},{v}\n')
-            file.write('\n')
+            if self.comments:
+                for k, v in self.comments.items():
+                    file.write(f'{k},{v}\n')
+                file.write('\n')
             file.write(','.join(self.headers) + '\n')
             for r in self.results:
                 file.write(','.join(str(i) for i in r) + '\n')
@@ -45,10 +46,12 @@ class Executable:
         self.headers = []
 
     def add_arg(self, name, t, default, help=None):
+        allow_multiple=True
         if not isinstance(default, list) and not isinstance(default, tuple):
             default = [default]
+            allow_multiple = False
         self.args += [(name, default)]
-        self.parser.add_argument(f'--{name}', type=t, nargs='*', help=help)
+        self.parser.add_argument(f'--{name}', type=t, nargs='*' if allow_multiple else 1, help=help)
 
     def set_headers(self, hdrs):
         self.headers = hdrs
@@ -118,13 +121,14 @@ class Analysis:
         self.name = name
         self.func = func
 
-    def analyze(self, results):
-        self.func(results)
+    def __call__(self, results, output):
+        self.func(results, output)
 
 class Runner:
-    def __init__(self, parser, resdir, tmpdir, cwd):
+    def __init__(self, parser, resdir, anadir, tmpdir, cwd):
         self.parser = parser
         self.resdir = resdir
+        self.anadir = anadir
         self.tmpdir = tmpdir
         self.cwd = cwd
         self.exes = []
@@ -143,7 +147,9 @@ class Runner:
         for post in self.post:
             post(args)
         for ana, tests in self.analyses:
-            pass
+            r = Results(os.path.join(self.anadir, f'{ana.name}.csv'))
+            ana({t.name: t.results for t in tests}, r)
+            r.commit()
 
     def add_executable(self, name, sources, flags=None, libs=None):
         self.exes += [Executable(name, os.path.join(self.tmpdir, name), self.resdir, self.cwd, self.parser, sources, flags, libs)]

@@ -13,6 +13,7 @@ tests = [
 
 PROJECT_SRC_DIR=os.path.abspath(os.path.dirname(__file__))
 RESULTS_DIR=os.path.abspath('results')
+ANALYSIS_DIR=os.path.abspath('analysis')
 
 def main():
     parser = ArgumentParser()
@@ -28,7 +29,7 @@ def main():
     for t in tests:
         p = subs.add_parser(t)
         p.set_defaults(test=t)
-        runner = Runner(p, RESULTS_DIR, os.path.join(tmpdir.name, t), os.path.abspath(os.path.join(PROJECT_SRC_DIR, t)))
+        runner = Runner(p, RESULTS_DIR, ANALYSIS_DIR, os.path.join(tmpdir.name, t), os.path.abspath(os.path.join(PROJECT_SRC_DIR, t)))
         mod = importlib.import_module(f'exp.{t}.{t}')
         register = getattr(mod, 'register')
         register(runner)
