@@ -1,0 +1,24 @@
+#!/bin/bash
+
+function set_cpu {
+    cmd="sudo bash -c \"echo $1 > /sys/devices/system/cpu/cpu$2/online\""
+    echo $cmd
+    eval $cmd
+}
+
+if [[ $1 == "enable" ]]; then
+    value=1
+elif [[ $1 == "disable" ]]; then
+    value=0
+else
+    echo "Usage: $0 <enable|disable>"
+    exit 1
+fi
+
+procs=$(lscpu | grep '^CPU(s):' | awk '{print $2}')
+
+for c in $(seq $(($procs / 2)) $(($procs - 1))); do
+    set_cpu $value $c
+done
+
+echo "online: $(nproc)"

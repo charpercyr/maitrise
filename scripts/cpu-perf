@@ -1,0 +1,22 @@
+#!/bin/bash
+
+function set_cpu {
+    cmd="sudo bash -c \"echo $1 > /sys/devices/system/cpu/cpufreq/policy$2/scaling_governor\""
+    echo $cmd
+    eval $cmd
+}
+
+if [[ $1 == "perf" ]]; then
+    value=performance
+elif [[ $1 == "save" ]]; then
+    value=powersave
+else
+    echo "Usage: $0 <perf|save>"
+    exit 1
+fi
+
+procs=$(lscpu | grep '^CPU(s):' | awk '{print $2}')
+
+for c in $(seq 0 $(($procs - 1))); do
+    set_cpu $value $c
+done
