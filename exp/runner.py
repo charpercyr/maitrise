@@ -32,18 +32,10 @@ class Results:
             for r in self.results:
                 file.write(','.join(str(i) for i in r) + '\n')
 
-class Executable:
-    def __init__(self, name, path, resdir, cwd, parser, sources, flags, libs):
-        self.name = name
-        self.path = path
-        self.resdir = resdir
-        self.cwd = cwd
+class Args:
+    def __init__(self, parser):
         self.parser = parser
-        self.sources = sources
-        self.flags = flags if flags is not None else []
-        self.libs = libs if libs is not None else []
         self.args = []
-        self.headers = []
 
     def add_arg(self, name, t, default, help=None):
         allow_multiple=True
@@ -53,8 +45,16 @@ class Executable:
         self.args += [(name, default)]
         self.parser.add_argument(f'--{name}', type=t, nargs='*' if allow_multiple else 1, help=help)
 
-    def set_headers(self, hdrs):
-        self.headers = hdrs
+class Executable:
+    def __init__(self, name, path, resdir, cwd, args, sources, flags, libs):
+        self.name = name
+        self.path = path
+        self.resdir = resdir
+        self.cwd = cwd
+        self.args = args
+        self.sources = sources
+        self.flags = flags if flags is not None else []
+        self.libs = libs if libs is not None else []
 
     def compile(self):
         os.makedirs(os.path.dirname(self.path), exist_ok=True)
@@ -68,11 +68,11 @@ class Executable:
             *(f'-l{l}' for l in self.libs)
         ], cwd=self.cwd)
 
-    def execute(self, test_name, cmdargs, before, after):
+    def execute(self, test_name, cmdargs, before, after, prefix, suffix, headers):
         runs = cmdargs.runs
         a = []
         format_string = f'{self.name}-{test_name}'
-        for name, default in self.args:
+        for name, default in self.args.args:
             try:
                 a += [getattr(cmdargs, name)]
                 if a[-1] is None:
@@ -85,10 +85,10 @@ class Executable:
         results = []
         for args in itertools.product(*a):
             keyargs = {}
-            for i, a in enumerate(self.args):
+            for i, a in enumerate(self.args.args):
                 keyargs[a[0]] = args[i]
             res = Results(os.path.join(self.resdir, format_string.format(**keyargs)))
-            res.set_headers(['run', *self.headers])
+            res.set_headers(['run', *headers])
             for k, v in keyargs.items():
                 res.add_comment(k, v)
             exec_args = [self.path, *(str(a) for a in args)]
@@ -96,7 +96,9 @@ class Executable:
             for i in range(runs):
                 out = str(execute(
                     exec_args, stdout=sp.PIPE, silent=not cmdargs.verbose,
-                    before=((lambda: before(cmdargs, self)) if before else None), after=((lambda: after(cmdargs, self)) if after else None)
+                    before=((lambda: before(cmdargs, self)) if before else None),
+                    after=((lambda: after(cmdargs, self)) if after else None),
+                    prefix=prefix, suffix=suffix, cwd=os.path.dirname(self.path)
                 )[0], 'utf-8')
                 res.add_result([i, *out.strip().split('\n')])
             res.commit()
@@ -105,16 +107,18 @@ class Executable:
 
 
 class Test:
-    def __init__(self, name, exe, before, after):
+    def __init__(self, name, exe, before, after, prefix, suffix):
         self.name = name
         self.exe = exe
         self.before = before
         self.after = after
+        self.prefix = prefix
+        self.suffix = suffix
         self.results = None
 
-    def __call__(self, args):
+    def __call__(self, args, headers):
         print(f'>>> {self.name.upper()}')
-        self.results = self.exe.execute(self.name, args, self.before, self.after)
+        self.results = self.exe.execute(self.name, args, self.before, self.after, self.prefix, self.suffix, headers)
 
 class Analysis:
     def __init__(self, name, func):
@@ -136,6 +140,7 @@ class Runner:
         self.analyses = []
         self.pre = []
         self.post = []
+        self.args = Args(self.parser)
 
     def run_all(self, args):
         for exe in self.exes:
@@ -143,7 +148,7 @@ class Runner:
         for pre in self.pre:
             pre(args)
         for t in self.tests:
-            t(args)
+            t(args, self.headers)
         for post in self.post:
             post(args)
         for ana, tests in self.analyses:
@@ -151,12 +156,15 @@ class Runner:
             ana({t.name: t.results for t in tests}, r)
             r.commit()
 
+    def add_arg(self, name, t, default, help=None):
+        self.args.add_arg(name, t, default, help)
+
     def add_executable(self, name, sources, flags=None, libs=None):
-        self.exes += [Executable(name, os.path.join(self.tmpdir, name), self.resdir, self.cwd, self.parser, sources, flags, libs)]
+        self.exes += [Executable(name, os.path.join(self.tmpdir, name), self.resdir, self.cwd, self.args, sources, flags, libs)]
         return self.exes[-1]
 
-    def add_test(self, name, exe, before=None, after=None):
-        self.tests += [Test(name, exe, before, after)]
+    def add_test(self, name, exe, before=None, after=None, prefix=None, suffix=None):
+        self.tests += [Test(name, exe, before, after, prefix, suffix)]
         return self.tests[-1]
 
     def add_analysis(self, name, func, *tests):
@@ -168,3 +176,6 @@ class Runner:
 
     def add_post(self, func):
         self.post += [func]
+
+    def set_headers(self, hdrs):
+        self.headers = hdrs

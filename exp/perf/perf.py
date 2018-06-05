@@ -93,20 +93,27 @@ def register(runner):
         ['perf.cpp'],
         libs=['pthread']
     )
-    exe.add_arg('threads', int, calc_threads(), help='Number of threads')
-    exe.add_arg('iters', int, 50000, help='Number of iterations')
-    exe.add_arg('b', int, 5, help='Base')
-    exe.add_arg('e', int, 123, help='Exponent')
-    exe.add_arg('m', int, 1030, help='Modulo')
-    exe.set_headers(['time (ns)'])
+    uftrace_exe = runner.add_executable(
+        'perf-uftrace',
+        ['perf.cpp'],
+        libs=['pthread'],
+        flags=['-pg']
+    )
+    runner.add_arg('threads', int, calc_threads(), help='Number of threads')
+    runner.add_arg('iters', int, 50000, help='Number of iterations')
+    runner.add_arg('b', int, 5, help='Base')
+    runner.add_arg('e', int, 123, help='Exponent')
+    runner.add_arg('m', int, 1030, help='Modulo')
+    runner.set_headers(['time (ns)'])
 
     none = runner.add_test('none', exe)
     dyntrace = runner.add_test('dyntrace', exe, before=create_dyntrace_before(False), after=dyntrace_after)
     dyntrace_ee = runner.add_test('dyntrace-ee', exe, before=create_dyntrace_before(True), after=dyntrace_after)
     uprobe = runner.add_test('uprobe', exe, before=create_uprobe_before(False), after=uprobe_after)
     uprobe_ee = runner.add_test('uprobe-ee', exe, before=create_uprobe_before(True), after=uprobe_after)
+    uftrace = runner.add_test('uftrace', uftrace_exe, prefix=['uftrace', '--no-pager', '--nop'])
 
-    runner.add_analysis('multithread', analyze_data, none, dyntrace, dyntrace_ee, uprobe, uprobe_ee)
+    runner.add_analysis('multithread', analyze_data, none, dyntrace, dyntrace_ee, uprobe, uprobe_ee, uftrace)
 
     runner.add_pre(dyntrace_after)
     runner.add_pre(uprobe_after)

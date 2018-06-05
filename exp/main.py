@@ -8,6 +8,7 @@ from exp.runner import Runner
 
 
 tests = [
+    'mem',
     'perf'
 ]
 
