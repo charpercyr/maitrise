@@ -6,22 +6,50 @@ import os
 from exp.execute import *
 from exp.runner import Results
 
+def devnull():
+    return open(os.path.devnull, 'w+')
+
 def create_dyntrace_before(ee):
-    args = [
+    add_args = [
         'dyntrace',
         'add',
         *(('-e',) if ee else ()),
-        'powmod',
+        '-r',
+        'perf:^powmod$',
         'none'
     ]
     def dyntrace_before(args, exe):
         sudo_execute(['dyntraced', '--d'], silent=not args.verbose)
         execute(['dyntrace', 'attach', exe.path], silent=not args.verbose)
+        execute(add_args, silent=not args.verbose, stdout=devnull())
         time.sleep(0.1)
     return dyntrace_before
 
 def dyntrace_after(args, exe=None):
     sudo_execute(['pkill', 'dyntraced'], ignore_err=True, silent=not args.verbose)
+
+UPROBE_TRACEPOINT_DIR = '/sys/kernel/debug/tracing'
+UPROBE_TRACEPOINT_FILE=f'{UPROBE_TRACEPOINT_DIR}/uprobe_events'
+UPROBE_TRACEPOINT_ENABLE=f'{UPROBE_TRACEPOINT_DIR}/events/uprobes/enable'
+
+def powmod_offset(path):
+    out = str(sp.run(['readelf', '-s', path], stdout=sp.PIPE).stdout, 'utf-8')
+    for line in out.split('\n'):
+        line = list(filter(None, line.strip().split(' ')))
+        if len(line) >= 8 and line[7] == 'powmod':
+            return int(line[1], 16)
+    raise ValueError('powmod not found in exe')
+
+def create_uprobe_before(ee):
+    tp = 'r' if ee else 'p'
+    def uprobe_before(args, exe):
+        sudo_execute(['echo', f'{tp}', f'{exe.path}:{powmod_offset(exe.path)}', '>', f'{UPROBE_TRACEPOINT_FILE}'], silent=not args.verbose)
+        sudo_execute(['echo', '1', '>', f'{UPROBE_TRACEPOINT_ENABLE}'], silent=not args.verbose)
+    return uprobe_before
+
+def uprobe_after(args, exe=None):
+        sudo_execute(['echo', '0', '>', f'{UPROBE_TRACEPOINT_ENABLE}'], ignore_err=True, silent=not args.verbose, stderr=devnull())
+        sudo_execute(['echo', '>', f'{UPROBE_TRACEPOINT_FILE}'], ignore_err=True, silent=not args.verbose, stderr=devnull())
 
 def analyze_data(results, output):
     res = {}
@@ -75,8 +103,12 @@ def register(runner):
     none = runner.add_test('none', exe)
     dyntrace = runner.add_test('dyntrace', exe, before=create_dyntrace_before(False), after=dyntrace_after)
     dyntrace_ee = runner.add_test('dyntrace-ee', exe, before=create_dyntrace_before(True), after=dyntrace_after)
+    uprobe = runner.add_test('uprobe', exe, before=create_uprobe_before(False), after=uprobe_after)
+    uprobe_ee = runner.add_test('uprobe-ee', exe, before=create_uprobe_before(True), after=uprobe_after)
 
-    runner.add_analysis('multithread', analyze_data, none, dyntrace, dyntrace_ee)
+    runner.add_analysis('multithread', analyze_data, none, dyntrace, dyntrace_ee, uprobe, uprobe_ee)
 
     runner.add_pre(dyntrace_after)
+    runner.add_pre(uprobe_after)
     runner.add_post(dyntrace_after)
+    runner.add_post(uprobe_after)

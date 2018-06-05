@@ -1,0 +1,6 @@
+#!/bin/bash
+
+scripts=$(dirname $0)
+
+$scripts/hyperthread disable
+$scripts/cpu-perf perf

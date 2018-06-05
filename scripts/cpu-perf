@@ -15,7 +15,7 @@ else
     exit 1
 fi
 
-procs=$(lscpu | grep '^CPU(s):' | awk '{print $2}')
+procs=$(nproc)
 
 for c in $(seq 0 $(($procs - 1))); do
     set_cpu $value $c
