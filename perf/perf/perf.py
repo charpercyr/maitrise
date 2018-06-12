@@ -3,8 +3,8 @@ import math
 import time
 import os
 
-from exp.execute import *
-from exp.runner import Results
+from perf.execute import *
+from perf.runner import Results
 
 def devnull():
     return open(os.path.devnull, 'w+')

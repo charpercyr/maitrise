@@ -1,0 +1,9 @@
+void {name}();
+asm(
+".global {name}\n"
+".type {name}, @function\n"
+"{name}:\n"
+"   nopl (%eax, %eax, 1)\n"
+"   ret\n"
+".size {name}, . - {name}"
+);

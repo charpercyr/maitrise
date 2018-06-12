@@ -4,11 +4,10 @@ import importlib
 import os
 import tempfile
 
-from exp.runner import Runner
+from perf.runner import Runner
 
 
 tests = [
-    'mem',
     'perf'
 ]
 
@@ -31,7 +30,7 @@ def main():
         p = subs.add_parser(t)
         p.set_defaults(test=t)
         runner = Runner(p, RESULTS_DIR, ANALYSIS_DIR, os.path.join(tmpdir.name, t), os.path.abspath(os.path.join(PROJECT_SRC_DIR, t)))
-        mod = importlib.import_module(f'exp.{t}.{t}')
+        mod = importlib.import_module(f'perf.{t}.{t}')
         register = getattr(mod, 'register')
         register(runner)
         runners[t] = runner
