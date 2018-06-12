@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess as sp
 
-DEFAULT_TPS = [0, 1, 5, 10, 50, 100, 500, 1000]
+DEFAULT_TPS = [1, 10, 100, 500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000]
 
 FUNC_TEMPLATE=os.path.join(os.path.dirname(__file__), 'func.c.in')
 MAIN_TEMPLATE=os.path.join(os.path.dirname(__file__), 'main.c.in')
@@ -17,13 +17,19 @@ def run_test(filename):
         raise RuntimeError(f'Could not compile {filename}.c')
     proc = sp.Popen([
         'dyntrace-run', '--', 'valgrind', '--tool=massif', '--pages-as-heap=yes', f'--massif-out-file={filename}.massif', filename],
-        stdin=sp.PIPE, #stdout=sp.PIPE, stderr=sp.PIPE
+        stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE
     )
     time.sleep(1)
-    sp.run(['dyntrace', 'add', 'valgrind:func*', 'none'])
+    sp.run(['dyntrace', 'add', 'valgrind:func*', 'none'], stdout=sp.PIPE)
     proc.communicate()
-    os.makedirs('results', exist_ok=True)
-    shutil.copy(f'{filename}.massif', 'results')
+    peak = -1
+    for line in open(f'{filename}.massif'):
+        if line.startswith('mem_heap_B='):
+            used = int(line.replace('mem_heap_B=', ''))
+            if used > peak:
+                peak = used
+    shutil.copy(f'{filename}.massif', 'results/')
+    return peak
 
 def make_exe(tps):
     func_content = open(FUNC_TEMPLATE).read()
@@ -42,10 +48,15 @@ def main():
 
     args = parser.parse_args()
 
-    tmpdir = tempfile.TemporaryDirectory(prefix='mem-')
+    os.makedirs('results', exist_ok=True)
+    os.makedirs('analysis', exist_ok=True)
 
+    tmpdir = tempfile.TemporaryDirectory(prefix='mem-')
+    data = []
     for tps in args.tps:
         filename = os.path.join(tmpdir.name, f'mem-{tps}')
         open(f'{filename}.c', 'w').write(make_exe(tps))
-        run_test(filename)
-    #print('\n'.join(os.listdir(tmpdir.name)))
+        data += [(tps, run_test(filename))]
+    out = open('analysis/mem.csv', 'w')
+    out.write('n,memory(KB)\n')
+    out.write('\n'.join(f'{d[0]},{d[1]//1024}'for d in data))
