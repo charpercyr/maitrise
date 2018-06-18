@@ -87,7 +87,10 @@ def calc_threads():
     t = 1
     while t < os.cpu_count():
         ths += [t]
-        t *= 2
+        if t < 8:
+            t *= 2
+        else:
+            t += 8
     if ths[-1] != os.cpu_count():
         ths += [os.cpu_count()]
     return ths
