@@ -34,10 +34,16 @@ UPROBE_TRACEPOINT_ENABLE=f'{UPROBE_TRACEPOINT_DIR}/events/uprobes/enable'
 
 def powmod_offset(path):
     out = str(sp.run(['readelf', '-s', path], stdout=sp.PIPE).stdout, 'utf-8')
+    base = str(sp.run(['readelf', '-l', path], stdout=sp.PIPE).stdout, 'utf-8')
+    for line in base.split('\n'):
+        line = list(filter(None, line.strip().split(' ')))
+        if len(line) >= 4 and line[0] == 'LOAD':
+            base = int(line[2], 16)
+            break
     for line in out.split('\n'):
         line = list(filter(None, line.strip().split(' ')))
         if len(line) >= 8 and line[7] == 'powmod':
-            return int(line[1], 16)
+            return int(line[1], 16) - base
     raise ValueError('powmod not found in exe')
 
 def create_uprobe_before(ee):
