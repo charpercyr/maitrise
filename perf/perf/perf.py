@@ -98,13 +98,13 @@ def register(runner):
         'perf',
         ['perf.cpp'],
         libs=['pthread'],
-        flags=['-pie']
+        flags=['-pie', '-fPIC']
     )
     uftrace_exe = runner.add_executable(
         'perf-uftrace',
         ['perf.cpp'],
         libs=['pthread'],
-        flags=['-pg', '-pie']
+        flags=['-pg', '-pie', '-fPIC']
     )
     runner.add_arg('threads', int, calc_threads(), help='Number of threads')
     runner.add_arg('iters', int, 50000, help='Number of iterations')
