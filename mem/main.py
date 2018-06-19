@@ -92,6 +92,7 @@ def main():
         open(os.path.join(cwd.name, f'{name}.c'), 'w').write(generate_file(MAX_ITER, n))
         compile(
             os.path.join(cwd.name, name),
-            [os.path.join(cwd.name, f'{name}.c')]
+            [os.path.join(cwd.name, f'{name}.c')],
+            flags=['-pie']
         )
         do_run(os.path.join(cwd.name, name))
