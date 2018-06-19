@@ -93,6 +93,6 @@ def main():
         compile(
             os.path.join(cwd.name, name),
             [os.path.join(cwd.name, f'{name}.c')],
-            flags=['-pie']
+            flags=['-pie', '-fPIC']
         )
         do_run(os.path.join(cwd.name, name))
