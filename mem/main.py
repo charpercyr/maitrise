@@ -6,7 +6,7 @@ import os
 import shutil
 import subprocess as sp
 
-DEFAULT_TPS = [1, 10, 100, 500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000]
+DEFAULT_TPS = [1, 10, 100, 500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000, 250000, 500000, 750000, 1000000]
 
 FUNC_TEMPLATE=os.path.join(os.path.dirname(__file__), 'func.c.in')
 MAIN_TEMPLATE=os.path.join(os.path.dirname(__file__), 'main.c.in')
