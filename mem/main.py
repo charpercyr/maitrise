@@ -1,62 +1,97 @@
 
-import argparse
+import itertools
+import os
 import tempfile
 import time
-import os
-import shutil
 import subprocess as sp
 
-DEFAULT_TPS = [1, 10, 100, 500, 1000, 2500, 5000, 7500, 10000, 25000, 50000, 75000, 100000, 250000, 500000, 750000, 1000000]
+FUNC_TEMPLATE="""
+asm(
+".type {name}, @function\\n"
+"{name}:\\n"
+"{nops}\\n"
+"ret\\n"
+".skip 16 - (. - {name})"
+);
+"""
 
-FUNC_TEMPLATE=os.path.join(os.path.dirname(__file__), 'func.c.in')
-MAIN_TEMPLATE=os.path.join(os.path.dirname(__file__), 'main.c.in')
+MAIN_TEMPLATE="""
+#include <stdio.h>
+int main()
+{{
+    while(getchar() != EOF);
+    return 0;
+}}
+"""
 
-def run_test(filename):
-    print(filename)
-    if sp.run(['gcc', f'{filename}.c', '-o', filename]).returncode != 0:
-        raise RuntimeError(f'Could not compile {filename}.c')
-    proc = sp.Popen([
-        'dyntrace-run', '--', 'valgrind', '--tool=massif', '--pages-as-heap=yes', f'--massif-out-file={filename}.massif', filename],
-        stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE
-    )
-    time.sleep(1)
-    sp.run(['dyntrace', 'add', 'valgrind:func*', 'none'], stdout=sp.PIPE)
+MAX_ITER = 1000
+
+ops = [
+    'nop',
+    'xchg %ax, %ax',
+    'nopl (%rax)',
+    'nopl (%eax)',
+    'nopl (%eax, %eax, 1)'
+]
+
+def calc_nops(n):
+    res = []
+    for i in range(1, n):
+        a = calc_nops(n - i)
+        for j in range(len(a)):
+            a[j] = (i, *a[j])
+        res += a
+    res += [(n,)]
+    return res
+
+def generate_file(n, nops):
+    res = ''
+    nops = [ops[i - 1] for i in nops]
+    for i in range(n):
+        res += FUNC_TEMPLATE.format(name=f'func{i}', nops='\\n"\n"'.join(nops)) + '\n'
+    return res + MAIN_TEMPLATE
+
+def compile(output, sources, flags=(), libs=()):
+    args = [
+        'gcc',
+        *sources,
+        *flags,
+        '-o',
+        output,
+        *('-l{l}' for l in libs)
+    ]
+    #print(' '.join(args))
+    sp.run(args)
+
+def do_run(file):
+    proc = sp.Popen(['dyntrace-run', file], stdin=sp.PIPE)
+    time.sleep(0.5)
+    worked = True
+    for i in range(MAX_ITER):
+        args = ['dyntrace', 'add', f'{file}:func{i}', 'none']
+        #print(*args)
+        res = sp.run(args, stdout=sp.PIPE, stderr=sp.PIPE)
+        if res.returncode != 0:
+            worked = False
+            break
+    if not worked:
+        print(f'Failed after {i+1} insert{"s" if i != 0 else ""}')
+    else:
+        print(f'Made it to {MAX_ITER} inserts')
     proc.communicate()
-    peak = -1
-    for line in open(f'{filename}.massif'):
-        if line.startswith('mem_heap_B='):
-            used = int(line.replace('mem_heap_B=', ''))
-            if used > peak:
-                peak = used
-    shutil.copy(f'{filename}.massif', 'results/')
-    return peak
 
-def make_exe(tps):
-    func_content = open(FUNC_TEMPLATE).read()
-    main_content = open(MAIN_TEMPLATE).read()
-    return \
-        '\n'.join(
-            func_content.format(name=f'func{i}') for i in range(tps)
-        ) + \
-        '\n' + \
-        main_content.format(calls='\n    '.join(f'func{i}();' for i in range(tps)))
 
 def main():
-    parser = argparse.ArgumentParser()
 
-    parser.add_argument('--tps', help='Number of tracepoints', nargs='+', type=int, default=DEFAULT_TPS)
+    cwd = tempfile.TemporaryDirectory(prefix='mem-')
 
-    args = parser.parse_args()
-
-    os.makedirs('results', exist_ok=True)
-    os.makedirs('analysis', exist_ok=True)
-
-    tmpdir = tempfile.TemporaryDirectory(prefix='mem-')
-    data = []
-    for tps in args.tps:
-        filename = os.path.join(tmpdir.name, f'mem-{tps}')
-        open(f'{filename}.c', 'w').write(make_exe(tps))
-        data += [(tps, run_test(filename))]
-    out = open('analysis/mem.csv', 'w')
-    out.write('n,memory(KB)\n')
-    out.write('\n'.join(f'{d[0]},{d[1]//1024}'for d in data))
+    nops = calc_nops(5)
+    for n in nops:
+        print('-'.join(map(str, n)))
+        name = '-'.join(str(i) for i in n)
+        open(os.path.join(cwd.name, f'{name}.c'), 'w').write(generate_file(MAX_ITER, n))
+        compile(
+            os.path.join(cwd.name, name),
+            [os.path.join(cwd.name, f'{name}.c')]
+        )
+        do_run(os.path.join(cwd.name, name))
