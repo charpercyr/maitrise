@@ -9,6 +9,8 @@ import time
 
 import numpy.random as rnd
 
+from dyntrace import execute, run_dyntrace
+
 NOPS = [
     '0x90',
     '0x66, 0x90',
@@ -39,14 +41,6 @@ def generate(size):
         size -= n
         yield n
 
-def execute(args, popen = False, **kwargs):
-    if VERBOSE:
-        print(' '.join(args))
-    if popen:
-        return sp.Popen(args, **kwargs)
-    else:
-        return sp.run(args, **kwargs)
-
 def gen_file(n):
     code = tempfile.NamedTemporaryFile('w+', suffix='.S')
     addr = ''
@@ -76,26 +70,6 @@ def gen_file(n):
 
 def get_funcs(exe):
     return sorted(str(sp.run(f"readelf -Ws {exe} | grep FUNC | grep -v UND | grep GLOBAL | awk '{{print $8}}'", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split('\n'))
-
-def run_dyntrace(exe, funcs):
-    success = 0
-    execute(['sudo', 'dyntraced', '--d'])
-    proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-    time.sleep(0.5)
-    for f in funcs:
-        if proc.poll() is not None:
-            proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-        ret = execute(['dyntrace', 'add', f'{exe}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE)
-        if ret.returncode == 0:
-            success += 1
-            tp = str(ret.stdout, 'utf-8').strip()
-            execute(['dyntrace', 'rm', f'{exe}:{tp}'])
-        else:
-            if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
-            if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
-    proc.kill()
-    execute(['sudo', 'pkill', 'dyntraced'])
-    return success
 
 def run_gdb(exe, funcs):
     commands = ''

@@ -4,6 +4,8 @@ import os
 import subprocess as sp
 import tempfile
 
+from dyntrace import run_dyntrace, execute, set_verbose
+
 NOPS = [
     'nop',
     'xchg %ax, %ax',
@@ -40,21 +42,15 @@ def gen_code(n, nops):
     res += '.size main, . - main\n'
     return res
 
-VERBOSE=False
-
-def execute(args, **kwargs):
-    if VERBOSE:
-        print(' '.join(args))
-    return sp.run(args, **kwargs)
-
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-n', default=1000, type=int)
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
 
-    global VERBOSE
-    VERBOSE = args.verbose
+    set_verbose(args.verbose)
+
+    success = {}
 
     for nops in gen_nops(5):
         code = tempfile.NamedTemporaryFile('w+', suffix='.S', prefix='mem-')
@@ -63,4 +59,8 @@ def main():
         code.write(gen_code(args.n, nops))
         code.flush()
         execute(['gcc', '-o', exe.name, code.name])
+        success[nops] = run_dyntrace(exe.name, [f'.{i}' for i in range(args.n)])
         os.remove(exe.name)
+
+    for n, s in success.items():
+        print(n, s)
