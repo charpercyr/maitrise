@@ -1,3 +1,3 @@
-from mem.main import main
+from avail.main import main
 
 main()
