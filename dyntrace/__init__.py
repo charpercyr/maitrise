@@ -19,11 +19,11 @@ def execute(args, popen = False, **kwargs):
 def run_dyntrace(exe, funcs, args=[]):
     success = 0
     execute(['sudo', 'dyntraced', '--d'])
-    proc = execute(['dyntrace-run', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+    proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     time.sleep(0.5)
     for f in funcs:
         if proc.poll() is not None:
-            proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+            proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         try:
             ret = execute(['dyntrace', 'add', f'{exe}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE, timeout=5)
             if ret.returncode == 0:
