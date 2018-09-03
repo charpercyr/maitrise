@@ -87,20 +87,20 @@ def main():
     args = parser.parse_args()
 
     set_verbose(args.verbose)
+
+    firefox_funcs = get_funcs(FIREFOX)
+    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, ['--headless'])
+    firefox = run_dyntrace(FIREFOX, firefox_funcs, ['--headless'])
+
+    nano_funcs = get_funcs(NANO)
+    nano_gdb = run_gdb(NANO, nano_funcs)
+    nano = run_dyntrace(NANO, nano_funcs)
     
     rnd.seed(args.seed)
     exe = gen_file(args.n)
     small_funcs = get_funcs(exe)
     small_gdb = run_gdb(exe, small_funcs)
     small = run_dyntrace(exe, small_funcs)
-
-    nano_funcs = get_funcs(NANO)
-    nano_gdb = run_gdb(NANO, nano_funcs)
-    nano = run_dyntrace(NANO, nano_funcs)
-
-    firefox_funcs = get_funcs(FIREFOX)
-    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, ['--headless'])
-    firefox = run_dyntrace(FIREFOX, firefox_funcs, ['--headless'])
     
     print(f'small-dyntrace: {small}/{len(small_funcs)}')
     print(f'small-gdb: {small_gdb}/{len(small_funcs)}')

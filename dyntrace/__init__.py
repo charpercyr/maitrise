@@ -34,8 +34,9 @@ def run_dyntrace(exe, funcs, args=[]):
                 if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
                 if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
         except sp.TimeoutExpired:
-            if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
-            if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
+            pass
+        if proc.poll() is not None:
+            proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     proc.kill()
     #execute(['sudo', 'pkill', 'dyntraced'])
     return success
