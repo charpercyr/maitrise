@@ -33,7 +33,7 @@ def run_dyntrace(exe, funcs, args=[]):
             else:
                 if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
                 if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
-        except TimeoutError:
+        except sp.TimeoutExpired:
             if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
             if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
     proc.kill()
