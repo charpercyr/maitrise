@@ -24,12 +24,16 @@ def run_dyntrace(exe, funcs, args=[]):
     for f in funcs:
         if proc.poll() is not None:
             proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
-        ret = execute(['dyntrace', 'add', f'{exe}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE)
-        if ret.returncode == 0:
-            success += 1
-            tp = str(ret.stdout, 'utf-8').strip()
-            execute(['dyntrace', 'rm', f'{exe}:{tp}'])
-        else:
+        try:
+            ret = execute(['dyntrace', 'add', f'{exe}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE, timeout=5)
+            if ret.returncode == 0:
+                success += 1
+                tp = str(ret.stdout, 'utf-8').strip()
+                execute(['dyntrace', 'rm', f'{exe}:{tp}'], timeout=5)
+            else:
+                if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
+                if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
+        except TimeoutError:
             if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
             if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())
     proc.kill()
