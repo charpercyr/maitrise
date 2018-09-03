@@ -16,7 +16,9 @@ def execute(args, popen = False, **kwargs):
     else:
         return sp.run(args, **kwargs)
 
-def run_dyntrace(exe, funcs, args=[]):
+def run_dyntrace(exe, funcs, name=None, args=[]):
+    if not name:
+        name = exe
     success = 0
     execute(['sudo', 'dyntraced', '--d'])
     proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
@@ -25,11 +27,11 @@ def run_dyntrace(exe, funcs, args=[]):
         if proc.poll() is not None:
             proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
         try:
-            ret = execute(['dyntrace', 'add', f'{exe}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE, timeout=5)
+            ret = execute(['dyntrace', 'add', f'{name}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE, timeout=5)
             if ret.returncode == 0:
                 success += 1
                 tp = str(ret.stdout, 'utf-8').strip()
-                execute(['dyntrace', 'rm', f'{exe}:{tp}'], timeout=5)
+                execute(['dyntrace', 'rm', f'{name}:{tp}'], timeout=5)
             else:
                 if VERBOSE and ret.stdout: print(str(ret.stdout, 'utf-8').strip())
                 if VERBOSE and ret.stderr: print(str(ret.stderr, 'utf-8').strip())

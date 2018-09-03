@@ -89,8 +89,8 @@ def main():
     set_verbose(args.verbose)
 
     firefox_funcs = get_funcs(FIREFOX)
-    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, ['--headless'])
-    firefox = run_dyntrace(FIREFOX, firefox_funcs, ['--headless'])
+    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, args=['--headless'])
+    firefox = run_dyntrace(FIREFOX, firefox_funcs, name='firefox', args=['--headless'])
 
     nano_funcs = get_funcs(NANO)
     nano_gdb = run_gdb(NANO, nano_funcs)
