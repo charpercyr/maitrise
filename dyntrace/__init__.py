@@ -38,7 +38,7 @@ def run_dyntrace(exe, funcs, name=None, args=[]):
         except sp.TimeoutExpired:
             pass
         if proc.poll() is not None:
-            proc = execute(['dyntrace-run', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+            proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     proc.kill()
     #execute(['sudo', 'pkill', 'dyntraced'])
     return success
