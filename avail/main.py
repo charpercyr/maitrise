@@ -31,6 +31,7 @@ NOPS = [
 
 MAIN_CPP = osp.join(osp.dirname(__file__), 'main.cpp')
 NANO = '/usr/local/bin/nano'
+FIREFOX = '/usr/local/bin/firefox'
 
 VERBOSE=False
 
@@ -71,12 +72,12 @@ def gen_file(n):
 def get_funcs(exe):
     return sorted(str(sp.run(f"readelf -Ws {exe} | grep FUNC | grep -v UND | grep GLOBAL | awk '{{print $8}}'", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split('\n'))
 
-def run_gdb(exe, funcs):
+def run_gdb(exe, funcs, args=[]):
     commands = ''
     for f in funcs:
         commands += f'ftrace {f}\n'
     commands += 'q\n'
-    res = execute(['gdb', exe], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+    res = execute(['gdb', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     out = str(res.communicate(bytes(commands, 'utf-8'))[0], 'utf-8')
     return out.count('Fast tracepoint')
 
@@ -99,8 +100,14 @@ def main():
     nano_funcs = get_funcs(NANO)
     nano_gdb = run_gdb(NANO, nano_funcs)
     nano = run_dyntrace(NANO, nano_funcs)
+
+    firefox_funcs = get_funcs(FIREFOX)
+    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, ['--headless'])
+    firefox = run_dyntrace(FIREFOX, firefox_funcs, ['--headless'])
     
     print(f'small-dyntrace: {small}/{len(small_funcs)}')
     print(f'small-gdb: {small_gdb}/{len(small_funcs)}')
     print(f'nano-dyntrace: {nano}/{len(nano_funcs)}')
     print(f'nano-gdb: {nano_gdb}/{len(nano_funcs)}')
+    print(f'firefox-dyntrace: {firefox}/{len(firefox_funcs)}')
+    print(f'firefox-gdb: {firefox_gdb}/{len(firefox_funcs)}')
