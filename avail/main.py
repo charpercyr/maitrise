@@ -9,7 +9,7 @@ import time
 
 import numpy.random as rnd
 
-from dyntrace import execute, run_dyntrace
+from dyntrace import execute, run_dyntrace, set_verbose
 
 NOPS = [
     '0x90',
@@ -32,8 +32,6 @@ NOPS = [
 MAIN_CPP = osp.join(osp.dirname(__file__), 'main.cpp')
 NANO = '/usr/local/bin/nano'
 FIREFOX = '/usr/local/bin/firefox'
-
-VERBOSE=False
 
 def generate(size):
     while size:
@@ -87,9 +85,8 @@ def main():
     parser.add_argument('--seed', type=int)
     parser.add_argument('--verbose', action='store_true')
     args = parser.parse_args()
-    
-    global VERBOSE
-    VERBOSE = args.verbose
+
+    set_verbose(args.verbose)
     
     rnd.seed(args.seed)
     exe = gen_file(args.n)
