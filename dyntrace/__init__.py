@@ -26,6 +26,7 @@ def run_dyntrace(exe, funcs, name=None, args=[]):
     for f in funcs:
         if proc.poll() is not None:
             proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+            time.sleep(0.5)
         try:
             ret = execute(['dyntrace', 'add', f'{name}:{f}', 'none'], stdout=sp.PIPE, stderr=sp.PIPE, timeout=5)
             if ret.returncode == 0:
@@ -39,6 +40,7 @@ def run_dyntrace(exe, funcs, name=None, args=[]):
             pass
         if proc.poll() is not None:
             proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+            time.sleep(0.5)
     proc.kill()
     #execute(['sudo', 'pkill', 'dyntraced'])
     return success
