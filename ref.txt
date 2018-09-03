@@ -1,0 +1,38 @@
+> Compiler Assisted
+llvm xray XRay: A Function Call Tracing System https://storage.googleapis.com/pub-tools-public-publication-data/pdf/45287.pdf
+gprof
+gcov
+uftrace
+ftrace
+
+> Dynamic Linux Kernel
+kprobe
+djprobe Djprobe — Kernel probing with the smallest overhead https://landley.net/kdocs/ols/2007/ols2007v1-pages-189-200.pdf
+jprobe
+kretprobe
+
+> Tools over Dynamic Linux Kernel
+dprobe A Universal Dynamic Trace for Linux and other Operating Systems https://www.usenix.org/legacy/event/usenix01/freenix01/full_papers/moore/moore.pdf
+systemtap
+eBPF
+strace http://man7.org/linux/man-pages/man1/strace.1.html
+sysdig
+perf
+
+> User Dynamic tracer
+gdb
+Dyninst
+uprobe
+systemtap
+DTrace
+
+> Hardware Assisted
+Intel PT
+ARM CoreSight
+
+> User JIT instrumentation
+valgrind
+pin Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation http://delivery.acm.org/10.1145/1070000/1065034/p190-luk.pdf?ip=132.207.4.76&id=1065034&acc=ACTIVE%20SERVICE&key=FD0067F557510FFB%2EC32CC723E17B05B2%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35&__acm__=1535822629_07edc3a257615bb86bd9639f81ce9997
+
+> User static tracer
+LTTng
