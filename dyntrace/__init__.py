@@ -49,6 +49,7 @@ def run_dyntrace(exe, funcs, name=None, args=[]):
         if proc.poll() is not None:
             proc = execute(['dyntrace-run', '--', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
             time.sleep(0.5)
+            base = get_base(exe)
     proc.kill()
     #execute(['sudo', 'pkill', 'dyntraced'])
     return success
