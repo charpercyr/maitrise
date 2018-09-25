@@ -9,7 +9,7 @@ import time
 
 import numpy.random as rnd
 
-from dyntrace import execute, run_dyntrace, set_verbose
+from dyntrace import *
 
 NOPS = [
     '0x90',
@@ -44,6 +44,7 @@ def gen_file(n):
     code = tempfile.NamedTemporaryFile('w+', suffix='.S')
     addr = ''
     gdb = 0
+    code.write('.section .text\n')
     for i, v in enumerate(generate(n)):
         code.write(
             f'.global .{i}\n'
@@ -68,12 +69,24 @@ def gen_file(n):
     return exe.name
 
 def get_funcs(exe):
-    return sorted(str(sp.run(f"readelf -Ws {exe} | grep FUNC | grep -v UND | grep GLOBAL | awk '{{print $8}}'", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split('\n'))
+    res = []
+    for f in str(sp.run(f"readelf -Ws {exe} | grep FUNC | grep -v UND | grep GLOBAL", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split('\n'):
+        f = list(filter(None, f.strip().split(' ')))
+        start, size, name = int(f[1], 16), int(f[2]), f[-1]
+        if not size:
+            continue
+        for a in str(sp.run(f"objdump -d {exe} --start-address={hex(start)} --stop-address={hex(start + size)} | grep -E '[a-fA-F0-9]+:' | awk '{{print $1}}' | sed 's/://g'", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split('\n'):
+            try:
+                res += [int(a, 16)]
+            except ValueError:
+                pass
+    return res
+
 
 def run_gdb(exe, funcs, args=[]):
     commands = ''
     for f in funcs:
-        commands += f'ftrace {f}\n'
+        commands += f'ftrace *0x{f}\n'
     commands += 'q\n'
     res = execute(['gdb', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     out = str(res.communicate(bytes(commands, 'utf-8'))[0], 'utf-8')
@@ -88,23 +101,24 @@ def main():
 
     set_verbose(args.verbose)
 
-    firefox_funcs = get_funcs(FIREFOX)
-    firefox_gdb = run_gdb(FIREFOX, firefox_funcs, args=['--headless'])
-    firefox = run_dyntrace(FIREFOX, firefox_funcs, name='firefox', args=['--headless'])
+    # firefox_funcs = get_funcs(FIREFOX)
+    # firefox_gdb = run_gdb(FIREFOX, firefox_funcs, args=['--headless'])
+    # firefox = run_dyntrace(FIREFOX, firefox_funcs, name='firefox', args=['--headless'])
 
-    nano_funcs = get_funcs(NANO)
-    nano_gdb = run_gdb(NANO, nano_funcs)
-    nano = run_dyntrace(NANO, nano_funcs)
+    # nano_funcs = get_funcs(NANO)
+    # nano_gdb = run_gdb(NANO, nano_funcs)
+    # nano = run_dyntrace(NANO, nano_funcs)
     
     rnd.seed(args.seed)
     exe = gen_file(args.n)
     small_funcs = get_funcs(exe)
-    small_gdb = run_gdb(exe, small_funcs)
+    # small_gdb = run_gdb(exe, small_funcs)
     small = run_dyntrace(exe, small_funcs)
+
+    # print(f'small-dyntrace: {small}/{len(small_funcs)}')
+    #print(f'small-gdb: {small_gdb}/{len(small_funcs)}')
+    # print(f'nano-dyntrace: {nano}/{len(nano_funcs)}')
+    #print(f'nano-gdb: {nano_gdb}/{len(nano_funcs)}')
+    # print(f'firefox-dyntrace: {firefox}/{len(firefox_funcs)}')
+    # print(f'firefox-gdb: {firefox_gdb}/{len(firefox_funcs)}')
     
-    print(f'small-dyntrace: {small}/{len(small_funcs)}')
-    print(f'small-gdb: {small_gdb}/{len(small_funcs)}')
-    print(f'nano-dyntrace: {nano}/{len(nano_funcs)}')
-    print(f'nano-gdb: {nano_gdb}/{len(nano_funcs)}')
-    print(f'firefox-dyntrace: {firefox}/{len(firefox_funcs)}')
-    print(f'firefox-gdb: {firefox_gdb}/{len(firefox_funcs)}')

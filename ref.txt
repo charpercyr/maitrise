@@ -23,7 +23,6 @@ perf
 gdb
 Dyninst
 uprobe
-systemtap
 DTrace
 
 > Hardware Assisted
@@ -32,7 +31,8 @@ ARM CoreSight
 
 > User JIT instrumentation
 valgrind
-pin Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation http://delivery.acm.org/10.1145/1070000/1065034/p190-luk.pdf?ip=132.207.4.76&id=1065034&acc=ACTIVE%20SERVICE&key=FD0067F557510FFB%2EC32CC723E17B05B2%2E4D4702B0C3E38B35%2E4D4702B0C3E38B35&__acm__=1535822629_07edc3a257615bb86bd9639f81ce9997
+pin Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation
 
 > User static tracer
 LTTng
+opentracing
