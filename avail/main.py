@@ -30,8 +30,8 @@ NOPS = [
 ]
 
 MAIN_CPP = osp.join(osp.dirname(__file__), 'main.cpp')
-NANO = '/usr/local/bin/nano'
-FIREFOX = '/usr/local/bin/firefox'
+NANO =    '/usr/local/bin/nano'
+FIREFOX = '/home/charpercyr/mozilla-central/obj-x86_64-pc-linux-gnu/dist/bin/firefox'
 
 def generate(size):
     while size:
@@ -87,6 +87,7 @@ def run_gdb(exe, funcs, args=[]):
     commands = ''
     for f in funcs:
         commands += f'ftrace *0x{f}\n'
+        commands += 'd\ny\n'
     commands += 'q\n'
     res = execute(['gdb', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     out = str(res.communicate(bytes(commands, 'utf-8'))[0], 'utf-8')
@@ -103,22 +104,22 @@ def main():
 
     firefox_funcs = get_funcs(FIREFOX)
     firefox_gdb = run_gdb(FIREFOX, firefox_funcs, args=['--headless'])
-    firefox = run_dyntrace(FIREFOX, firefox_funcs, name='firefox', args=['--headless'])
+    #firefox = run_dyntrace(FIREFOX, firefox_funcs, name='firefox', args=['--headless'])
 
-    nano_funcs = get_funcs(NANO)
-    nano_gdb = run_gdb(NANO, nano_funcs)
-    nano = run_dyntrace(NANO, nano_funcs)
+    #nano_funcs = get_funcs(NANO)
+    #nano_gdb = run_gdb(NANO, nano_funcs)
+    #nano = run_dyntrace(NANO, nano_funcs)
     
-    rnd.seed(args.seed)
-    exe = gen_file(args.n)
-    small_funcs = get_funcs(exe)
-    small_gdb = run_gdb(exe, small_funcs)
-    small = run_dyntrace(exe, small_funcs)
+    #rnd.seed(args.seed)
+    #exe = gen_file(args.n)
+    #small_funcs = get_funcs(exe)
+    #small_gdb = run_gdb(exe, small_funcs)
+    #small = run_dyntrace(exe, small_funcs)
 
-    print(f'small-dyntrace: {small}/{len(small_funcs)}')
-    print(f'small-gdb: {small_gdb}/{len(small_funcs)}')
-    print(f'nano-dyntrace: {nano}/{len(nano_funcs)}')
-    print(f'nano-gdb: {nano_gdb}/{len(nano_funcs)}')
-    print(f'firefox-dyntrace: {firefox}/{len(firefox_funcs)}')
+    #print(f'small-dyntrace: {small}/{len(small_funcs)}')
+    #print(f'small-gdb: {small_gdb}/{len(small_funcs)}')
+    #print(f'nano-dyntrace: {nano}/{len(nano_funcs)}')
+    #print(f'nano-gdb: {nano_gdb}/{len(nano_funcs)}')
+    #print(f'firefox-dyntrace: {firefox}/{len(firefox_funcs)}')
     print(f'firefox-gdb: {firefox_gdb}/{len(firefox_funcs)}')
     
