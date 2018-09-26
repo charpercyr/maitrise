@@ -89,7 +89,7 @@ def run_gdb(exe, funcs, args=[]):
         commands += f'ftrace *0x{f}\n'
         commands += 'd\ny\n'
     commands += 'q\n'
-    res = execute(['gdb', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
+    res = execute(['gdb', '--args', exe, *args], True, stdin=sp.PIPE, stdout=sp.PIPE, stderr=sp.PIPE)
     out = str(res.communicate(bytes(commands, 'utf-8'))[0], 'utf-8')
     return out.count('Fast tracepoint')
 

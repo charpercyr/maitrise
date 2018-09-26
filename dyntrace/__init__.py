@@ -18,7 +18,6 @@ def execute(args, popen = False, **kwargs):
 
 def get_base(exe):
     bases = str(sp.run(f"cat /proc/$(ps ax | grep {exe} | grep -v dyntrace-run | awk '{{print $1}}' | head -1)/maps | grep {exe} | grep r-xp | sed 's/-/ /g' | awk '{{print $1}}'", shell=True, stdout=sp.PIPE).stdout, 'utf-8').strip().split()
-    print(exe, bases)
     return min(int(b, 16) for b in bases)
 
 def run_dyntrace(exe, funcs, name=None, args=[]):
